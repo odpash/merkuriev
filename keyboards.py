@@ -5,7 +5,7 @@ def main_menu():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     markup.row(types.InlineKeyboardButton("Создать счет"))
     markup.row(types.InlineKeyboardButton("К согласованию"), types.InlineKeyboardButton("К оплате"))
-    markup.row(types.InlineKeyboardButton("Активные счета"), types.InlineKeyboardButton("Все счета"))
+    markup.row(types.InlineKeyboardButton("Активные счета"), types.InlineKeyboardButton("Поиск счета"))
     return markup
 
 
@@ -19,3 +19,10 @@ def pay_btn(id):
     markup = types.InlineKeyboardMarkup()
     markup.row(types.InlineKeyboardButton("Оплатить", callback_data=f"pay_{id}"))
     return markup
+
+
+def back():
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.row(types.InlineKeyboardButton("Вернуться в меню"))
+    return markup
+
