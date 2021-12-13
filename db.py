@@ -5,13 +5,41 @@ import datetime
 
 async def create_new(text, item_id, creator_username, creator_real_name, creator_telegram_id):
     sqlite_connection = sqlite3.connect('sqlite_python.db')
-    created_time = datetime.datetime.now()
+    a = datetime.datetime.now()
+    dop_a, dop_b, dop_c, dop_d = '', '', '', ''
+    if len(str(a.hour)) == 1:
+        dop_a = '0'
+    if len(str(a.minute)) == 1:
+        dop_b = '0'
+    if len(str(a.day)) == 1:
+        dop_c = '0'
+    if len(str(a.month)) == 1:
+        dop_d = '0'
     cursor = sqlite_connection.cursor()
     sqlite_insert_query = f"""INSERT INTO items (id, itemText, creatorUsername, creatorRealName, creatorTelegramId, createdTime, postlink)
-      VALUES  ({item_id}, '{text}', '{creator_username}', '{creator_real_name}', '{creator_telegram_id}', '{created_time}', '')"""
+      VALUES  ({item_id}, '{text}', '{creator_username}', '{creator_real_name}', '{creator_telegram_id}', '{dop_a + str(a.hour) + ":" + dop_b + str(a.minute) + ' ' + dop_c + str(a.day) + '.' + dop_d + str(a.month) + '.' + str(a.year)}', '')"""
     cursor.execute(sqlite_insert_query)
     sqlite_connection.commit()
     cursor.close()
+
+
+async def update_text(id, text):
+    sqlite_connection = sqlite3.connect('sqlite_python.db')
+    cursor = sqlite_connection.cursor()
+    sql_update_query = f"Update items set itemText = '{text}' where id = {id}"
+    cursor.execute(sql_update_query)
+    sqlite_connection.commit()
+    cursor.close()
+
+
+async def delete_post(id):
+    sqlite_connection = sqlite3.connect('sqlite_python.db')
+    cursor = sqlite_connection.cursor()
+    sql_update_query = f"Delete from items where id = {id}"
+    cursor.execute(sql_update_query)
+    sqlite_connection.commit()
+    cursor.close()
+
 
 
 async def update_approve(id, approver_username, approver_real_name, approver_telegram_id):
