@@ -3,7 +3,7 @@ import sqlite3
 import datetime
 
 
-async def create_new(text, item_id, creator_username, creator_real_name, creator_telegram_id):
+async def create_new(text, item_id, creator_username, creator_real_name, creator_telegram_id, message_id):
     sqlite_connection = sqlite3.connect('sqlite_python.db')
     a = datetime.datetime.now()
     dop_a, dop_b, dop_c, dop_d = '', '', '', ''
@@ -16,8 +16,8 @@ async def create_new(text, item_id, creator_username, creator_real_name, creator
     if len(str(a.month)) == 1:
         dop_d = '0'
     cursor = sqlite_connection.cursor()
-    sqlite_insert_query = f"""INSERT INTO items (id, itemText, creatorUsername, creatorRealName, creatorTelegramId, createdTime, postlink)
-      VALUES  ({item_id}, '{text}', '{creator_username}', '{creator_real_name}', '{creator_telegram_id}', '{dop_a + str(a.hour) + ":" + dop_b + str(a.minute) + ' ' + dop_c + str(a.day) + '.' + dop_d + str(a.month) + '.' + str(a.year)}', '')"""
+    sqlite_insert_query = f"""INSERT INTO items (id, itemText, creatorUsername, creatorRealName, creatorTelegramId, createdTime, postlink, message_id)
+      VALUES  ({item_id}, '{text}', '{creator_username}', '{creator_real_name}', '{creator_telegram_id}', '{dop_a + str(a.hour) + ":" + dop_b + str(a.minute) + ' ' + dop_c + str(a.day) + '.' + dop_d + str(a.month) + '.' + str(a.year)}', '', '{message_id}')"""
     cursor.execute(sqlite_insert_query)
     sqlite_connection.commit()
     cursor.close()
@@ -89,3 +89,17 @@ def all_info():
     res = cursor.fetchall()
     cursor.close()
     return res
+
+
+def get_message_id(u_id):
+    a = all_info()
+    for i in a:
+        if str(i[0]) == str(u_id):
+            return int(i[15])
+
+
+def get_message_text(u_id):
+    a = all_info()
+    for i in a:
+        if str(i[0]) == str(u_id):
+            return str(i[1])

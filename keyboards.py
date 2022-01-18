@@ -13,7 +13,7 @@ def approve_btn(id):
     markup = types.InlineKeyboardMarkup()
     markup.row(types.InlineKeyboardButton("Согласовать", callback_data=f"approve1_{id}"),
                types.InlineKeyboardButton("Удалить", callback_data=f"approve4_{id}"))
-    markup.row(types.InlineKeyboardButton("Изменить фото", callback_data=f"approve2_{id}"),
+    markup.row(types.InlineKeyboardButton("Изменить фото / pdf", callback_data=f"approve2_{id}"),
                types.InlineKeyboardButton("Изменить текст", callback_data=f"approve3_{id}"))
     return markup
 
