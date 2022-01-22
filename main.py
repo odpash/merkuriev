@@ -287,15 +287,14 @@ async def start(message):
         pass
 
 
-async def start_work():
+def start_work():
     while True:
         try:
             executor.start_polling(dp, on_startup=print("Бот запущен"))
         except Exception as e:
             print(e)
-            time.sleep(5)
+            time.sleep(50)
 
 
 if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(start_work())
+    start_work()
