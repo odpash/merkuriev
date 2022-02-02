@@ -36,3 +36,17 @@ def back():
     return markup
 
 
+def admin():
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.row(types.InlineKeyboardButton("Оповещения о необходимости оплаты"))
+    markup.row(types.InlineKeyboardButton("Оповещения о необходимости согласования"))
+    markup.row(types.InlineKeyboardButton("Вернуться в меню"))
+    return markup
+
+
+def get_admin_info(f, action):
+    markup = types.InlineKeyboardMarkup()
+    for i in f:
+        markup.row(types.InlineKeyboardButton(i, callback_data=f"admin_{action}_{i}"))
+    markup.row(types.InlineKeyboardButton("Добавить нового пользователя", callback_data=f"{action}_{'add'}"))
+    return markup

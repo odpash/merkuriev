@@ -1,17 +1,17 @@
-import asyncio
 import datetime
 import os
 import time
-import telebot
 from aiogram import Bot, Dispatcher, executor
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import StatesGroup, State
 from aiogram.types import InputFile, InputMediaDocument, InputMediaPhoto
 import logic
-from keyboards import main_menu, ok, back
-from db import create_new, count, update_approve, update_pay, update_postlink, update_text, delete_post, all_info, \
+from keyboards import main_menu, ok, back, admin, get_admin_info
+from db import create_new, count, update_approve, update_pay, update_postlink, update_text, delete_post, \
     get_message_id, get_message_text
-from logic import to_approve, to_pay, find, active
+from db import read_json, delete_json, write_new_json
+from logic import to_approve, to_pay, active
 
 bot = Bot(token="5012003579:AAFZA9fTzzxL7WL1COMOmypCuExpMZOTHvg")
 storage = MemoryStorage()
@@ -22,6 +22,11 @@ m_id = []
 
 class Form(StatesGroup):
     text_or_photo = State()
+
+
+class Admin(StatesGroup):
+    add_user = State()
+    add_user_2 = State()
 
 
 @dp.message_handler(state=Form.text_or_photo, content_types=['photo', 'document'])
@@ -57,13 +62,41 @@ async def abc(message, state):
                                          chat_id=-1001742419815,
                                          message_id=get_message_id(u_id)
                                          )
-        await bot.edit_message_caption(caption=get_message_text(u_id), chat_id=-1001742419815, message_id=get_message_id(u_id))
+        await bot.edit_message_caption(caption=get_message_text(u_id), chat_id=-1001742419815,
+                                       message_id=get_message_id(u_id))
         await state.finish()
         await message.answer("Фото / Pdf успешно изменено.")
         message.text = "/start"
         await start(message)
     except:
         pass
+
+
+@dp.message_handler(state=Admin.add_user_2)
+async def admin_add(data, state: FSMContext):
+    s = await state.get_data()
+    s = s['add_user'].replace('_add', '')
+    if 'success' in s:
+        cat1.append(data.chat.id)
+    else:
+        cat2.append(data.chat.id)
+    write_new_json(s, data.text)
+    await bot.send_message(data.chat.id, "Пользователь добавлен!")
+    await state.finish()
+
+
+@dp.callback_query_handler(lambda m: 'pay' in m.data or 'success' in m.data, state=Admin.add_user)
+async def admin_change(data, state: FSMContext):
+    if data.data == 'pay_add' or data.data == 'success_add':
+        await state.update_data(add_user=data.data)
+        await Admin.add_user_2.set()
+        await bot.send_message(data.message.chat.id,
+                               "Введите Имя и фамилию пользователя (то как он записан в telegram).\nПример: Олег Пащенко")
+    else:
+        await state.finish()
+        delete_json(data.data)
+        await bot.send_message(data.message.chat.id, "Пользователь успешно удален!")
+
 
 @dp.message_handler(state=Form.text_or_photo, content_types=['text'])
 async def cba(message, state):
@@ -83,6 +116,8 @@ async def cba(message, state):
         await start(message)
     except:
         pass
+
+
 async def alert(c):
     try:
 
@@ -90,6 +125,7 @@ async def alert(c):
             await bot.send_message(i, "Появилась новая информация!")
     except:
         pass
+
 
 async def send_to_chanel(message, photo, type):
     try:
@@ -171,6 +207,7 @@ async def approve_cb_or_pay_cb(query):
     except:
         pass
 
+
 @dp.message_handler(content_types=['photo', 'document'])
 async def handle_docs_photo(message):
     print(message['message_id'])
@@ -209,7 +246,8 @@ async def handle_docs_photo(message):
                 add = 'jpg'
             photo = InputFile(f"database/{item_id}.{add}")
             mes_id = await send_to_chanel(
-                f"ID: {item_id}\nТекст: " + str(message.caption).replace("None", "") + "\n" + dop_a + str(a.hour) + ":" + dop_b + str(
+                f"ID: {item_id}\nТекст: " + str(message.caption).replace("None", "") + "\n" + dop_a + str(
+                    a.hour) + ":" + dop_b + str(
                     a.minute) + ' ' + dop_c + str(a.day) + '.' + dop_d + str(a.month) + '.' + str(a.year), photo, add)
             await create_new(message.caption, item_id, message['from']['username'],
                              str(message['from']['first_name']) + " " +
@@ -219,10 +257,12 @@ async def handle_docs_photo(message):
     except:
         pass
 
-@dp.message_handler(content_types=['text'])
-async def start(message):
+
+@dp.message_handler(content_types=['text'], state="*")
+async def start(message, state: FSMContext):
     global m_id
-    #await bot.edit_message_media(chat_id=-1001742419815, message_id=187, media=photo)
+    await state.finish()
+    # await bot.edit_message_media(chat_id=-1001742419815, message_id=187, media=photo)
     try:
         if message.chat.id == -1001742419815 or message['from']['username'] == 'GroupAnonymousBot':
             return
@@ -239,6 +279,20 @@ async def start(message):
                 f" новых счетов напишите /new\nДля включения (отключения) оповещений о согласовании "
                 f"счета напишите /approve\nДля включения (отключения) оповещений об оплате напишите /pay",
                 reply_markup=main_menu())
+        elif message.text == '/admin':
+            await message.answer(
+                "Добро пожаловать в админку!\nЗдесь вы можете назначить людей, которые будут согласовывать и оплачивать счета.",
+                reply_markup=admin())
+
+        elif message.text == "Оповещения о необходимости оплаты" or message.text == 'Оповещения о необходимости согласования':
+            if 'оплаты' in message.text:
+                status = 'pay'
+            else:
+                status = 'success'
+            info = read_json(status)
+            await message.answer("Выберите человека из списка для удаления или добавьте нового пользователя",
+                                 reply_markup=get_admin_info(info, status))
+            await Admin.add_user.set()
         elif message.text == '/new':
             if message.chat.id not in cat1:
                 await message.answer("Оповещения о появлении новых счетов - вкл.")
@@ -261,19 +315,35 @@ async def start(message):
                 await message.answer("Оповещения об оплате счетов - выкл.")
                 cat3.remove(message.chat.id)
         elif message.text == "Создать счет":
-            await message.answer("Отправьте фото или PDF со счетом и напишите необходимую подпись (все в одном сообщении):\n(здесь показано место куда нужно нажать для добавления коментариев)")
+            await message.answer(
+                "Отправьте фото или PDF со счетом и напишите необходимую подпись (все в одном сообщении):\n(здесь показано место куда нужно нажать для добавления коментариев)")
             photo1 = open('add_desription.png', 'rb')
             photo2 = open('add_description_2.jpg', 'rb')
-            await bot.send_media_group(chat_id=message.chat.id, media=[{'type': 'photo', 'media': photo1}, {'type': 'photo', 'media': photo2}])
+            await bot.send_media_group(chat_id=message.chat.id,
+                                       media=[{'type': 'photo', 'media': photo1}, {'type': 'photo', 'media': photo2}])
         elif message.text == "К согласованию":
-            await message.answer("Cчета к согласованию:")
-            m_id = await to_approve(message, bot)
+            f = read_json("success")
+            if message['from']['first_name'] + " " + message['from']['last_name'] in f:
+                await message.answer("Cчета к согласованию:")
+                m_id = await to_approve(message, bot)
+            else:
+                await message.answer("Доступ запрещен!")
         elif message.text == "К оплате":
-            await message.answer("Счета к оплате")
-            m_id = await to_pay(message, bot)
+            f = read_json('pay')
+            if message['from']['first_name'] + " " + message['from']['last_name'] in f:
+                await message.answer("Счета к оплате")
+                m_id = await to_pay(message, bot)
+            else:
+                await message.answer("Доступ запрещен!")
         elif message.text == "Активные счета":
-            await message.answer("Активные счета")
-            m_id = await active(message, bot)
+            f = read_json('success')
+            f2 = read_json('pay')
+            name = message['from']['first_name'] + " " + message['from']['last_name']
+            if name in f and name in f2:
+                await message.answer("Активные счета")
+                m_id = await active(message, bot)
+            else:
+                await message.answer("Доступ запрещен!")
         elif message.text == "Поиск счета":
             await message.answer("Введите текст поиска:")
 

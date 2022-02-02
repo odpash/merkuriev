@@ -1,7 +1,7 @@
 import datetime
 import sqlite3
 import datetime
-
+import json
 
 async def create_new(text, item_id, creator_username, creator_real_name, creator_telegram_id, message_id):
     sqlite_connection = sqlite3.connect('sqlite_python.db')
@@ -103,3 +103,30 @@ def get_message_text(u_id):
     for i in a:
         if str(i[0]) == str(u_id):
             return str(i[1])
+
+
+def read_json(category):
+    f = json.loads(open('alerts.json', 'r', encoding='UTF-8').read())
+    return f[category]
+
+
+def delete_json(info):
+    try:
+        category = info.split('_')[1]
+        name = info.split('_')[2]
+        f = json.loads(open('alerts.json', 'r', encoding='UTF-8').read())
+        f[category].remove(name)
+        fn = open('alerts.json', 'w', encoding='UTF-8')
+        fn.write(json.dumps(f))
+    except:
+        pass
+
+
+def write_new_json(category, name):
+    try:
+        f = json.loads(open('alerts.json', 'r', encoding='UTF-8').read())
+        f[category].append(name)
+        fn = open('alerts.json', 'w', encoding='UTF-8')
+        fn.write(json.dumps(f))
+    except:
+        pass
